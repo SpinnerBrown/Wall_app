@@ -1,0 +1,14 @@
+{
+  "name": "Wall",
+  "short_name": "Wall",
+  "description": "Personal home-wall boulder log",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

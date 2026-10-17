@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Wall">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Wall</title>
+<style>
+:root{--bg:#111;--card:#1c1c1e;--line:#2c2c2e;--tx:#f2f2f2;--mut:#9a9aa0;--acc:#4da3ff;
+--warmup:#2e9e5b;--easy:#2f7de1;--medium:#e6b800;--hard:#d9382f;--project:#8a4fd6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 -apple-system,system-ui,Roboto,sans-serif;-webkit-user-select:none;user-select:none;overscroll-behavior:none;touch-action:manipulation}
+#app{max-width:640px;margin:0 auto;padding:env(safe-area-inset-top) 12px calc(32px + env(safe-area-inset-bottom))}
+input,textarea,select,button{font:inherit;color:inherit}
+input,textarea,select{-webkit-user-select:text;user-select:text;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}
+textarea{min-height:90px;resize:vertical}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-height:44px;cursor:pointer}
+.btn.pri{background:var(--acc);color:#001;border-color:var(--acc);font-weight:600}
+.btn.danger{color:#ff6b6b}
+.btn.sm{min-height:38px;padding:6px 12px;font-size:15px}
+.btn.on{border-color:var(--acc);color:var(--acc)}
+.top{display:flex;align-items:center;gap:8px;padding:10px 0;position:sticky;top:env(safe-area-inset-top);background:var(--bg);z-index:5}
+.top .ttl{flex:1;font-size:19px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mut{color:var(--mut);font-size:14px}
+.chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;color:#fff;border:1px solid transparent;background:transparent;min-height:0;line-height:1.3}
+.chip.c-warmup{background:var(--warmup)}.chip.c-easy{background:var(--easy)}.chip.c-medium{background:var(--medium);color:#111}.chip.c-hard{background:var(--hard)}.chip.c-project{background:var(--project)}
+.chip.off{background:transparent!important;color:var(--mut);border-color:var(--line)}
+button.chip{padding:8px 13px;font-size:14px;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:8px 0}
+.seg button{flex:1;background:var(--card);border:0;padding:9px;min-height:40px;cursor:pointer}
+.seg button.on{background:var(--acc);color:#001;font-weight:600}
+.srow{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;min-height:58px;border-left:6px solid var(--line);cursor:pointer}
+.row.d-warmup{border-left-color:var(--warmup)}.row.d-easy{border-left-color:var(--easy)}.row.d-medium{border-left-color:var(--medium)}.row.d-hard{border-left-color:var(--hard)}.row.d-project{border-left-color:var(--project)}
+.rname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsub{display:flex;gap:8px;align-items:center;margin-top:3px}
+.rmain{min-width:0}
+.rright{font-size:17px;color:var(--mut);white-space:nowrap}
+.stars{color:#f5c542;letter-spacing:1px}
+.stage{position:relative;width:100%;height:min(60vh,640px);background:#000;border-radius:12px;overflow:hidden;touch-action:none;-webkit-user-select:none}
+.layer{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.layer img{display:block;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
+.layer svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.banner{background:#2a2410;border:1px solid #5a4a10;padding:10px 12px;border-radius:10px;margin:8px 0;font-size:14px}
+.banner.blue{background:#10202e;border-color:#1f4a6e}
+.card{background:var(--card);border-radius:12px;padding:12px;margin:10px 0}
+.card h3{margin:0 0 6px;font-size:16px}
+.lbl{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+.tools{display:flex;gap:6px}
+.tools button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;font-size:13px;min-height:56px}
+.starbar button{background:none;border:0;font-size:30px;color:#f5c542;padding:2px 6px;cursor:pointer;min-height:44px}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv:last-child{border-bottom:0}
+.acts{display:flex;gap:8px;margin:10px 0}
+.acts .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center;z-index:50}
+#toast.on{opacity:1}
+.hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.center{text-align:center;padding:30px 10px}
+input[type=range]{padding:0;height:32px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<input class="hid" type="file" id="fWall" accept="image/*">
+<input class="hid" type="file" id="fImport" accept="application/json,.json">
+<script>
+(()=>{
+'use strict';
+/* ---------- constants & helpers ---------- */
+const SCHEMA=1;
+const DIFFS=[['warmup','Warm-up'],['easy','Easy'],['medium','Medium'],['hard','Hard'],['project','Project']];
+const DL=Object.fromEntries(DIFFS);
+const ROLES=[['hand','Hand'],['foot','Foot'],['start','Start'],['finish','Finish']];
+const ROLE_SET=new Set(ROLES.map(r=>r[0]));
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+const now=()=>Date.now();
+const fmt=t=>t?new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'—';
+const starStr=n=>'★'.repeat(n)+'☆'.repeat(5-n);
+let toastT;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2800);}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+/* ---------- IndexedDB ---------- */
+let db;
+function openDB(){return new Promise((res,rej)=>{
+  const r=indexedDB.open('wallapp',1);
+  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('walls',{keyPath:'id'});d.createObjectStore('problems',{keyPath:'id'});d.createObjectStore('meta',{keyPath:'key'});};
+  r.onsuccess=()=>res(r.result);
+  r.onerror=()=>rej(r.error);
+  r.onblocked=()=>rej(new Error('blocked'));
+});}
+const reqP=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+const txDone=t=>new Promise((res,rej)=>{t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||new Error('aborted'));});
+const getAll=s=>reqP(db.transaction(s).objectStore(s).getAll());
+
+/* ---------- state & normalisers (fill defaults so old records always load) ---------- */
+const S={walls:[],problems:[],meta:{key:'meta',schemaVersion:SCHEMA,lastBackupAt:null,changes:0}};
+function normWall(w){return{
+  id:String(w.id||uid()),name:String(w.name||'Wall'),
+  photoBuf:w.photoBuf,photoType:w.photoType||'image/jpeg',
+  w:+w.w>0?+w.w:1,h:+w.h>0?+w.h:1,
+  createdAt:+w.createdAt||now(),archived:!!w.archived,archivedAt:w.archivedAt||null};}
+function normHold(h){return{x:Math.min(1,Math.max(0,+h.x||0)),y:Math.min(1,Math.max(0,+h.y||0)),r:Math.min(0.15,Math.max(0.004,+h.r||0.03)),role:ROLE_SET.has(h.role)?h.role:'hand'};}
+function normProb(p){return{
+  id:String(p.id||uid()),wallId:String(p.wallId||''),name:String(p.name||'Untitled'),
+  difficulty:DL[p.difficulty]?p.difficulty:'medium',
+  stars:Math.min(5,Math.max(0,Math.round(+p.stars||0))),
+  feetRule:p.feetRule==='any'?'any':'marked',
+  holds:Array.isArray(p.holds)?p.holds.map(normHold):[],
+  notes:String(p.notes||''),sent:!!p.sent,firstSentAt:p.firstSentAt||null,
+  attempts:Math.max(0,Math.round(+p.attempts||0)),lastClimbedAt:p.lastClimbedAt||null,
+  createdAt:+p.createdAt||now(),updatedAt:+p.updatedAt||now()};}
+const activeWall=()=>S.walls.find(w=>!w.archived)||null;
+const wallById=id=>S.walls.find(w=>w.id===id)||null;
+const probById=id=>S.problems.find(p=>p.id===id)||null;
+async function load(){
+  S.walls=(await getAll('walls')).map(normWall);
+  S.problems=(await getAll('problems')).map(normProb);
+  const m=(await getAll('meta')).find(x=>x.key==='meta');
+  if(m)S.meta=Object.assign({key:'meta',schemaVersion:SCHEMA,lastBackupAt:null,changes:0},m);
+}
+async function commitProblem(p,remove){
+  const m=Object.assign({},S.meta,{changes:(S.meta.changes||0)+1});
+  const t=db.transaction(['problems','meta'],'readwrite');
+  if(remove)t.objectStore('problems').delete(p.id);else t.objectStore('problems').put(p);
+  t.objectStore('meta').put(m);
+  await txDone(t);
+  if(remove)S.problems=S.problems.filter(x=>x.id!==p.id);
+  else{const i=S.problems.findIndex(x=>x.id===p.id);if(i<0)S.problems.push(p);else S.problems[i]=p;}
+  S.meta=m;
+}
+async function saveMeta(m){const t=db.transaction('meta','readwrite');t.objectStore('meta').put(m);await txDone(t);S.meta=m;}
+
+/* ---------- photos ---------- */
+const urlCache=new Map();
+function photoURL(w){
+  if(!urlCache.has(w.id))urlCache.set(w.id,URL.createObjectURL(new Blob([w.photoBuf],{type:w.photoType})));
+  return urlCache.get(w.id);
+}
+function processPhoto(file){return new Promise((res,rej)=>{
+  const u=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{try{
+    const W0=img.naturalWidth,H0=img.naturalHeight,sc=Math.min(1,1600/Math.max(W0,H0));
+    const w=Math.round(W0*sc),h=Math.round(H0*sc);
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    c.toBlob(async b=>{URL.revokeObjectURL(u);if(!b)return rej(new Error('encode'));
+      res({photoBuf:await b.arrayBuffer(),photoType:'image/jpeg',w,h});},'image/jpeg',0.85);
+  }catch(e){URL.revokeObjectURL(u);rej(e);}};
+  img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('load'));};
+  img.src=u;
+});}
+
+/* ---------- photo stage: zoom / pan / tap ---------- */
+let curStage=null;
+function ringSVG(h,W,H){
+  const cx=h.x*W,cy=h.y*H,R=h.r*W,vs='vector-effect="non-scaling-stroke"';
+  const under=r=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-opacity=".85" stroke-width="5.5" ${vs}/>`;
+  const top=(r,dash)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-width="2.5" ${dash?`stroke-dasharray="${dash}"`:''} ${vs}/>`;
+  switch(h.role){
+    case 'start':return under(R)+top(R)+under(R*.62)+top(R*.62);
+    case 'foot':return under(R)+top(R,'5 4');
+    case 'finish':return under(R)+top(R)+`<circle cx="${cx}" cy="${cy}" r="${R*.2}" fill="#fff" stroke="#000" stroke-width="1.5" ${vs}/>`;
+    default:return under(R)+top(R);
+  }
+}
+function mountStage(host,wall,onTap){
+  const W=wall.w,H=wall.h;
+  host.innerHTML=`<div class="layer"><img alt=""><svg viewBox="0 0 ${W} ${H}"></svg></div>`;
+  const layer=host.firstChild,img=layer.querySelector('img'),svg=layer.querySelector('svg');
+  img.src=photoURL(wall);
+  layer.style.width=W+'px';layer.style.height=H+'px';
+  let vw=0,vh=0,f=1,k=1,tx=0,ty=0,rect=null;
+  const P=new Map();let g=null;
+  function measure(){rect=host.getBoundingClientRect();vw=rect.width;vh=rect.height;f=Math.min(vw/W,vh/H)||1;}
+  function apply(){
+    k=Math.max(f,Math.min(f*5,k));
+    const cw=W*k,ch=H*k;
+    tx=cw<=vw?(vw-cw)/2:Math.min(0,Math.max(vw-cw,tx));
+    ty=ch<=vh?(vh-ch)/2:Math.min(0,Math.max(vh-ch,ty));
+    layer.style.transform=`translate(${tx}px,${ty}px) scale(${k})`;
+  }
+  function fit(){measure();k=f;tx=ty=0;apply();}
+  function resize(){const oldF=f;measure();if(k<=oldF*1.001)k=f;apply();}
+  const rel=e=>({x:e.clientX-rect.left,y:e.clientY-rect.top});
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+  function startPan(p){g={mode:'pan',x0:p.x,y0:p.y,tx0:tx,ty0:ty,moved:false,multi:false,t:performance.now()};}
+  host.addEventListener('pointerdown',e=>{
+    measure();try{host.setPointerCapture(e.pointerId);}catch(_){}
+    P.set(e.pointerId,rel(e));
+    if(P.size===1)startPan(rel(e));
+    else if(P.size===2){const [a,b]=[...P.values()];g={mode:'pinch',d0:dist(a,b)||1,m0:mid(a,b),k0:k,tx0:tx,ty0:ty,moved:true,multi:true};}
+  });
+  host.addEventListener('pointermove',e=>{
+    if(!P.has(e.pointerId)||!g)return;
+    P.set(e.pointerId,rel(e));
+    if(g.mode==='pinch'&&P.size>=2){
+      const [a,b]=[...P.values()],m=mid(a,b);
+      const nk=Math.max(f,Math.min(f*5,g.k0*dist(a,b)/g.d0));
+      const cx=(g.m0.x-g.tx0)/g.k0,cy=(g.m0.y-g.ty0)/g.k0;
+      k=nk;tx=m.x-cx*k;ty=m.y-cy*k;apply();
+    }else if(g.mode==='pan'&&P.size===1){
+      const p=P.get(e.pointerId),dx=p.x-g.x0,dy=p.y-g.y0;
+      if(!g.moved&&Math.hypot(dx,dy)>8)g.moved=true;
+      if(g.moved){tx=g.tx0+dx;ty=g.ty0+dy;apply();}
+    }
+  });
+  function end(e){
+    if(!P.has(e.pointerId))return;
+    const p=P.get(e.pointerId);P.delete(e.pointerId);
+    if(P.size===0){
+      if(e.type==='pointerup'&&g&&g.mode==='pan'&&!g.moved&&!g.multi&&performance.now()-g.t<700&&onTap){
+        onTap((p.x-tx)/k/W,(p.y-ty)/k/H,k);
+      }
+      g=null;
+    }else if(P.size===1){
+      const rem=[...P.values()][0];startPan(rem);g.moved=true;g.multi=true;
+    }
+  }
+  host.addEventListener('pointerup',end);
+  host.addEventListener('pointercancel',end);
+  host.addEventListener('wheel',e=>{e.preventDefault();measure();const p=rel(e),nk=Math.max(f,Math.min(f*5,k*(e.deltaY<0?1.2:1/1.2)));
+    const cx=(p.x-tx)/k,cy=(p.y-ty)/k;k=nk;tx=p.x-cx*k;ty=p.y-cy*k;apply();},{passive:false});
+  function render(holds,dim){
+    let mask='';
+    if(dim&&holds.length){
+      mask=`<defs><mask id="dm"><rect width="${W}" height="${H}" fill="#fff"/>${holds.map(h=>`<circle cx="${h.x*W}" cy="${h.y*H}" r="${h.r*W*1.9}" fill="#000"/>`).join('')}</mask></defs><rect width="${W}" height="${H}" fill="#000" fill-opacity=".62" mask="url(#dm)"/>`;
+    }
+    svg.innerHTML=mask+holds.map(h=>ringSVG(h,W,H)).join('');
+  }
+  fit();
+  const api={fit,resize,render,getK:()=>k};
+  curStage=api;return api;
+}
+window.addEventListener('resize',()=>curStage&&curStage.resize());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+
+/* ---------- view state ---------- */
+const F={diffs:new Set(),sent:'all',q:'',sort:'newest'};
+let V={name:'list'};
+let stage=null;
+function go(name,props){V=Object.assign({name},props||{});stage=null;curStage=null;window.scrollTo(0,0);render();}
+const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+function holdIcon(role){
+  const c=(r,d)=>`<circle cx="12" cy="12" r="${r}" fill="none" stroke="currentColor" stroke-width="2" ${d?`stroke-dasharray="${d}"`:''}/>`;
+  const inner=role==='start'?c(9.5)+c(5.5):role==='foot'?c(9,'4 3'):role==='finish'?c(9)+'<circle cx="12" cy="12" r="2.6" fill="currentColor"/>':c(9);
+  return `<svg width="26" height="26" viewBox="0 0 24 24">${inner}</svg>`;
+}
+const chipHTML=d=>`<span class="chip c-${d}">${DL[d]}</span>`;
+
+/* ---------- render dispatcher ---------- */
+function render(){
+  const app=$('#app');
+  if(!activeWall()&&V.name!=='settings'&&V.name!=='setup'){V={name:'setup'};}
+  switch(V.name){
+    case 'setup':app.innerHTML=viewSetup();break;
+    case 'settings':app.innerHTML=viewSettings();break;
+    case 'view':app.innerHTML=viewProblem();mountView();break;
+    case 'edit':app.innerHTML=viewEdit();mountEdit();break;
+    default:app.innerHTML=viewList();renderRows();
+  }
+}
+
+/* ---------- setup ---------- */
+function viewSetup(){
+  const first=!S.walls.length;
+  return `<div class="center"><h2>${first?'Set up your wall':'New wall set'}</h2>
+  <p class="mut">Take or choose a straight-on photo of your wall in good light. Every boulder is saved on top of this photo.</p>
+  ${first?'<input id="suName" placeholder="Wall name (e.g. Garage wall)">':''}
+  <p><button class="btn pri" data-act="pickwall">Take / choose wall photo</button></p>
+  ${first?'':'<p><button class="btn" data-act="settings">Cancel</button></p>'}</div>`;
+}
+
+/* ---------- list ---------- */
+function bannersHTML(ro){
+  let h='';
+  if(!isStandalone())h+=`<div class="banner">Not installed yet. In Safari tap Share, then Add to Home Screen, and open the app from the icon. Browser tabs can lose saved data.</div>`;
+  const days=S.meta.lastBackupAt?(now()-S.meta.lastBackupAt)/864e5:null;
+  if(!ro&&S.problems.length&&((S.meta.changes||0)>=10||(days!==null&&days>=30&&(S.meta.changes||0)>0)))
+    h+=`<div class="banner blue">Backup recommended: ${S.meta.changes} change(s) since ${S.meta.lastBackupAt?fmt(S.meta.lastBackupAt):'never backed up'}. <a href="#" data-act="export" style="color:var(--acc)">Back up now</a></div>`;
+  return h;
+}
+function viewList(){
+  const w=V.wallId?wallById(V.wallId):activeWall();const ro=!!w.archived;
+  return `<div class="top">${ro?'<button class="btn" data-act="settings">‹ Back</button>':''}
+    <div class="ttl">${ro?esc(w.name):'Boulders'}</div>
+    ${ro?'':'<button class="btn pri" data-act="new">+ New</button><button class="btn" data-act="settings" aria-label="Settings">⚙︎</button>'}</div>
+  ${ro?'<div class="banner">Archived wall set (read-only). '+esc(fmt(w.archivedAt))+'</div>':''}
+  ${bannersHTML(ro)}
+  <div class="chips">${DIFFS.map(([k,l])=>`<button class="chip c-${k} ${F.diffs.has(k)?'':'off'}" data-act="fdiff" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="seg">${[['all','All'],['unsent','Unsent'],['sent','Sent']].map(([k,l])=>`<button class="${F.sent===k?'on':''}" data-act="fsent" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="srow"><input id="q" type="search" placeholder="Search name or notes" value="${esc(F.q)}" style="flex:2">
+  <select id="sort" style="flex:1.3">${[['newest','Newest'],['stars','Stars'],['name','Name'],['stale','Least recently climbed']].map(([k,l])=>`<option value="${k}" ${F.sort===k?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="mut" id="count" style="margin:4px 2px 8px"></div><div id="rows"></div>`;
+}
+function filtered(wid){
+  const q=F.q.trim().toLowerCase();
+  let a=S.problems.filter(p=>p.wallId===wid);
+  const total=a.length;
+  if(F.diffs.size)a=a.filter(p=>F.diffs.has(p.difficulty));
+  if(F.sent==='sent')a=a.filter(p=>p.sent);else if(F.sent==='unsent')a=a.filter(p=>!p.sent);
+  if(q)a=a.filter(p=>(p.name+' '+p.notes).toLowerCase().includes(q));
+  const s=F.sort;
+  a.sort((x,y)=>s==='stars'?(y.stars-x.stars)||x.name.localeCompare(y.name)
+    :s==='name'?x.name.localeCompare(y.name,undefined,{numeric:true})
+    :s==='stale'?((x.lastClimbedAt||0)-(y.lastClimbedAt||0))||(x.createdAt-y.createdAt)
+    :(y.createdAt-x.createdAt));
+  return {a,total};
+}
+function renderRows(){
+  const el=$('#rows');if(!el)return;
+  const w=V.wallId?wallById(V.wallId):activeWall();
+  const {a,total}=filtered(w.id);
+  $('#count').textContent=a.length===total?`${total} boulder${total===1?'':'s'}`:`${a.length} of ${total} boulders`;
+  el.innerHTML=a.length?a.map(p=>`<div class="row d-${p.difficulty}" data-act="open" data-id="${p.id}">
+    <div class="rmain"><div class="rname">${esc(p.name)}</div><div class="rsub">${chipHTML(p.difficulty)}<span class="stars">${starStr(p.stars)}</span></div></div>
+    <div class="rright">${p.attempts&&!p.sent?'×'+p.attempts+' ':''}${p.sent?'✓':''}</div></div>`).join('')
+    :`<div class="center mut">${total?'No boulders match these filters.':'No boulders yet. Tap + New to set your first one.'}</div>`;
+}
+
+/* ---------- view problem ---------- */
+function viewProblem(){
+  const p=probById(V.pid),w=wallById(p.wallId);
+  return `<div class="top"><button class="btn" data-act="back">‹ Back</button><div class="ttl">${esc(p.name)}</div>${w.archived?'':'<button class="btn" data-act="edit">Edit</button>'}</div>
+  <div id="stage" class="stage"></div>
+  <div class="srow"><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Dim rest</button><button class="btn sm" data-act="fit">Fit</button></div>
+  <div id="vInfo"></div>`;
+}
+function renderInfo(){
+  const p=probById(V.pid),w=wallById(p.wallId),ro=w.archived;
+  $('#vInfo').innerHTML=`<div class="card"><div class="srow" style="margin:0">${chipHTML(p.difficulty)}<span class="stars" style="font-size:20px">${starStr(p.stars)}</span><span class="mut">${p.feetRule==='any'?'Any feet':'Marked feet only'}</span></div>
+    ${p.notes?`<div style="margin-top:10px;white-space:pre-wrap;-webkit-user-select:text;user-select:text">${esc(p.notes)}</div>`:''}</div>
+  <div class="card"><div class="kv"><span>Status</span><span>${p.sent?'Sent '+fmt(p.firstSentAt):'Not sent'}</span></div>
+  <div class="kv"><span>Attempts</span><span>${p.attempts}</span></div>
+  <div class="kv"><span>Last climbed</span><span>${fmt(p.lastClimbedAt)}</span></div></div>
+  ${ro?'':`<div class="acts"><button class="btn" data-act="attempt">+ Attempt</button><button class="btn sm" style="flex:0 0 52px" data-act="unattempt" aria-label="Remove attempt">−</button>
+  <button class="btn ${p.sent?'on':'pri'}" data-act="sent">${p.sent?'✓ Sent':'Mark sent'}</button></div>`}`;
+}
+function mountView(){
+  const p=probById(V.pid),w=wallById(p.wallId);
+  stage=mountStage($('#stage'),w,null);
+  stage.render(p.holds,V.dim);renderInfo();
+}
+
+/* ---------- edit problem ---------- */
+function viewEdit(){
+  return `<div class="top"><button class="btn" data-act="ecancel">Cancel</button><div class="ttl">${V.isNew?'New boulder':'Edit boulder'}</div><button class="btn pri" data-act="esave">Save</button></div>
+  <div id="stage" class="stage"></div>
+  <div class="srow"><button class="btn sm" data-act="undo">↶ Undo</button><button class="btn sm" data-act="fit">Fit</button><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Dim rest</button><span class="mut" id="hcount"></span></div>
+  <div id="edCtrl"></div>`;
+}
+function renderEdCtrl(){
+  const d=V.draft;
+  $('#hcount').textContent=d.holds.length+' hold'+(d.holds.length===1?'':'s');
+  $('#edCtrl').innerHTML=`
+  <div class="tools">${ROLES.map(([k,l])=>`<button class="btn ${V.role===k?'on':''}" data-act="role" data-v="${k}">${holdIcon(k)}<span>${l}</span></button>`).join('')}</div>
+  <label class="lbl">Ring size</label><input id="ring" type="range" min="12" max="70" value="${Math.round(V.ring*1000)}">
+  <label class="lbl">Name</label><input id="edName" value="${esc(d.name)}" placeholder="e.g. Left arête">
+  <label class="lbl">Difficulty</label><div class="chips">${DIFFS.map(([k,l])=>`<button class="chip c-${k} ${d.difficulty===k?'':'off'}" data-act="diff" data-v="${k}">${l}</button>`).join('')}</div>
+  <label class="lbl">Quality</label><div class="starbar">${[1,2,3,4,5].map(i=>`<button data-act="star" data-v="${i}">${i<=d.stars?'★':'☆'}</button>`).join('')}</div>
+  <label class="lbl">Feet</label><div class="seg"><button class="${d.feetRule==='marked'?'on':''}" data-act="feet" data-v="marked">Marked feet only</button><button class="${d.feetRule==='any'?'on':''}" data-act="feet" data-v="any">Any feet</button></div>
+  <label class="lbl">Notes / beta</label><textarea id="edNotes" placeholder="Beta, keywords, ideas">${esc(d.notes)}</textarea>
+  ${V.isNew?'':'<p style="margin-top:24px"><button class="btn danger" data-act="delete">Delete this boulder</button></p>'}`;
+}
+function drawEdit(){if(stage)stage.render(V.draft.holds,V.dim);const c=$('#hcount');if(c)c.textContent=V.draft.holds.length+' hold'+(V.draft.holds.length===1?'':'s');}
+function mountEdit(){
+  const w=activeWall();
+  stage=mountStage($('#stage'),w,(x,y,k)=>{
+    if(x<0||x>1||y<0||y>1)return;
+    const d=V.draft,W=w.w,H=w.h;
+    let best=-1,bd=1e9;
+    d.holds.forEach((h,i)=>{const dd=Math.hypot((x-h.x)*W,(y-h.y)*H);if(dd<bd){bd=dd;best=i;}});
+    pushUndo();
+    if(best>=0&&bd<=Math.max(d.holds[best].r*W*1.15,18/k))d.holds.splice(best,1);
+    else d.holds.push({x,y,r:V.ring,role:V.role});
+    drawEdit();
+  });
+  renderEdCtrl();drawEdit();
+}
+function pushUndo(){V.undo.push(JSON.stringify(V.draft.holds));if(V.undo.length>60)V.undo.shift();}
+async function saveDraft(){
+  const d=V.draft;
+  if(!d.holds.length){toast('Add at least one hold');return;}
+  d.name=d.name.trim()||'Untitled';d.updatedAt=now();
+  const p=normProb(d);
+  try{await commitProblem(p);}catch(e){toast('Save failed. Nothing was changed.');return;}
+  go('view',{pid:p.id,dim:V.dim});
+}
+
+/* ---------- settings ---------- */
+let storeInfo={persisted:null,usage:null};
+async function refreshStore(){
+  try{if(navigator.storage&&navigator.storage.persisted)storeInfo.persisted=await navigator.storage.persisted();
+    if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();storeInfo.usage=e.usage;}}catch(e){}
+  if(V.name==='settings'&&$('#storeBox'))$('#storeBox').innerHTML=storeHTML();
+}
+function storeHTML(){
+  return `<div class="kv"><span>Installed to Home Screen</span><span>${isStandalone()?'Yes':'No'}</span></div>
+  <div class="kv"><span>Permanent storage</span><span>${storeInfo.persisted===null?'Unknown':storeInfo.persisted?'Granted':'Not granted'}</span></div>
+  <div class="kv"><span>Space used</span><span>${storeInfo.usage==null?'—':(storeInfo.usage/1048576).toFixed(1)+' MB'}</span></div>`;
+}
+function viewSettings(){
+  const arch=S.walls.filter(w=>w.archived).sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+  const aw=activeWall();
+  setTimeout(refreshStore,0);
+  return `<div class="top">${aw?'<button class="btn" data-act="home">‹ Back</button>':''}<div class="ttl">Settings</div></div>
+  <div class="card"><h3>Backup</h3>
+   <div class="kv"><span>Last backup</span><span>${S.meta.lastBackupAt?fmt(S.meta.lastBackupAt):'Never'}</span></div>
+   <div class="kv"><span>Changes since</span><span>${S.meta.changes||0}</span></div>
+   <div class="acts"><button class="btn pri" data-act="export">Export backup</button><button class="btn" data-act="import">Import backup</button></div>
+   <div class="mut">Export saves one file with your wall photos and every boulder. Save it to Files or iCloud Drive.</div></div>
+  <div class="card"><h3>Wall</h3>
+   <div class="mut" style="margin-bottom:8px">${aw?esc(aw.name)+' · '+S.problems.filter(p=>p.wallId===aw.id).length+' boulders':'No active wall'}</div>
+   <button class="btn" data-act="newwall">New wall set (archives current boulders)</button></div>
+  ${arch.length?`<div class="card"><h3>Archived wall sets</h3>${arch.map(w=>`<div class="row" data-act="openwall" data-id="${w.id}"><div class="rmain"><div class="rname">${esc(w.name)}</div><div class="mut">${S.problems.filter(p=>p.wallId===w.id).length} boulders · archived ${fmt(w.archivedAt)}</div></div><div class="rright">›</div></div>`).join('')}</div>`:''}
+  <div class="card"><h3>Storage</h3><div id="storeBox">${storeHTML()}</div></div>`;
+}
+function toDataURL(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(blob);});}
+async function exportBackup(){
+  try{
+    const walls=[];
+    for(const w of S.walls)walls.push({id:w.id,name:w.name,w:w.w,h:w.h,createdAt:w.createdAt,archived:w.archived,archivedAt:w.archivedAt,photoType:w.photoType,photoData:await toDataURL(new Blob([w.photoBuf],{type:w.photoType}))});
+    const json=JSON.stringify({app:'wallapp',version:SCHEMA,exportedAt:now(),walls,problems:S.problems});
+    const name='wall-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    const file=new File([json],name,{type:'application/json'});
+    let ok=false;
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:name});ok=true;}catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    if(!ok){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
+    await saveMeta(Object.assign({},S.meta,{lastBackupAt:now(),changes:0}));
+    toast('Backup saved');if(V.name==='settings'||V.name==='list')render();
+  }catch(e){toast('Backup failed');}
+}
+function validateBackup(d){
+  if(!d||d.app!=='wallapp')return 'This is not a Wall backup file';
+  if(!Number.isInteger(d.version)||d.version>SCHEMA)return 'Backup is from a newer version of the app';
+  if(!Array.isArray(d.walls)||!Array.isArray(d.problems))return 'Backup file is incomplete';
+  const ids=new Set();
+  for(const w of d.walls){if(!w||typeof w.id!=='string'||typeof w.photoData!=='string'||!w.photoData.startsWith('data:')||!(+w.w>0)||!(+w.h>0))return 'A wall in the backup is damaged';ids.add(w.id);}
+  for(const p of d.problems){if(!p||typeof p.id!=='string'||!ids.has(p.wallId)||!Array.isArray(p.holds))return 'A boulder in the backup is damaged';}
+  return null;
+}
+async function importBackup(file){
+  let d;try{d=JSON.parse(await file.text());}catch(e){toast('Not a valid backup file');return;}
+  const err=validateBackup(d);if(err){toast(err);return;}
+  if(!confirm(`Replace ALL current data with this backup?\n\n${d.walls.length} wall set(s), ${d.problems.length} boulder(s).`))return;
+  try{
+    const walls=[];
+    for(const w of d.walls){const buf=await (await fetch(w.photoData)).arrayBuffer();walls.push(normWall(Object.assign({},w,{photoBuf:buf})));}
+    let act=walls.filter(w=>!w.archived).sort((a,b)=>b.createdAt-a.createdAt);
+    act.slice(1).forEach(w=>{w.archived=true;w.archivedAt=w.archivedAt||now();});
+    const problems=d.problems.map(normProb);
+    const meta={key:'meta',schemaVersion:SCHEMA,lastBackupAt:+d.exportedAt||now(),changes:0};
+    const t=db.transaction(['walls','problems','meta'],'readwrite');
+    try{
+      t.objectStore('walls').clear();t.objectStore('problems').clear();t.objectStore('meta').clear();
+      walls.forEach(w=>t.objectStore('walls').put(w));problems.forEach(p=>t.objectStore('problems').put(p));t.objectStore('meta').put(meta);
+    }catch(e){try{t.abort();}catch(_){}throw e;}
+    await txDone(t);
+    urlCache.forEach(u=>URL.revokeObjectURL(u));urlCache.clear();
+    S.walls=walls;S.problems=problems;S.meta=meta;
+    toast('Backup restored');go('list');
+  }catch(e){toast('Import failed. Your data was not changed.');}
+}
+async function addWall(file,name,archiveOld){
+  try{
+    const ph=await processPhoto(file);
+    const w=normWall(Object.assign({id:uid(),name,createdAt:now()},ph));
+    const t=db.transaction('walls','readwrite');
+    const old=archiveOld?S.walls.filter(x=>!x.archived).map(x=>Object.assign({},x,{archived:true,archivedAt:now()})):[];
+    old.forEach(o=>t.objectStore('walls').put(o));
+    t.objectStore('walls').put(w);
+    await txDone(t);
+    S.walls=S.walls.map(x=>old.find(o=>o.id===x.id)||x);S.walls.push(w);
+    toast('Wall ready');go('list');
+  }catch(e){toast('Could not read that photo');}
+}
+
+/* ---------- events ---------- */
+let wallMode='first';
+async function act(a,el){
+  const v=el.dataset.v,id=el.dataset.id;
+  switch(a){
+    case 'pickwall':wallMode='first';$('#fWall').click();break;
+    case 'new':{const w=activeWall();go('edit',{isNew:true,undo:[],role:V.role||'hand',ring:V.ring||(+lsGet('ring',0.03)),dim:false,
+      draft:{id:uid(),wallId:w.id,name:'',difficulty:'medium',stars:0,feetRule:'marked',holds:[],notes:'',sent:false,firstSentAt:null,attempts:0,lastClimbedAt:null,createdAt:now(),updatedAt:now()}});V.orig=JSON.stringify(V.draft);break;}
+    case 'open':go('view',{pid:id,from:V.wallId||null,dim:false});break;
+    case 'back':{const p=probById(V.pid);const w=p&&wallById(p.wallId);go('list',{wallId:w&&w.archived?w.id:null});break;}
+    case 'home':go('list');break;
+    case 'settings':go('settings');break;
+    case 'fdiff':F.diffs.has(v)?F.diffs.delete(v):F.diffs.add(v);el.classList.toggle('off');renderRows();break;
+    case 'fsent':F.sent=v;document.querySelectorAll('[data-act=fsent]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));renderRows();break;
+    case 'fit':stage&&stage.fit();break;
+    case 'dim':V.dim=!V.dim;el.classList.toggle('on',V.dim);if(V.name==='edit')drawEdit();else{const p=probById(V.pid);stage.render(p.holds,V.dim);}break;
+    case 'edit':{const p=probById(V.pid);go('edit',{isNew:false,undo:[],role:'hand',ring:+lsGet('ring',0.03),dim:false,draft:JSON.parse(JSON.stringify(p))});V.orig=JSON.stringify(V.draft);break;}
+    case 'role':V.role=v;renderEdCtrl();break;
+    case 'diff':V.draft.difficulty=v;renderEdCtrl();break;
+    case 'star':V.draft.stars=(V.draft.stars===+v)?0:+v;renderEdCtrl();break;
+    case 'feet':V.draft.feetRule=v;renderEdCtrl();break;
+    case 'undo':if(V.undo.length){V.draft.holds=JSON.parse(V.undo.pop());drawEdit();}break;
+    case 'ecancel':if(JSON.stringify(V.draft)!==V.orig&&!confirm('Discard your changes?'))break;V.isNew?go('list'):go('view',{pid:V.draft.id});break;
+    case 'esave':await saveDraft();break;
+    case 'delete':if(!confirm('Delete this boulder? This cannot be undone.'))break;
+      try{await commitProblem(V.draft,true);go('list');}catch(e){toast('Delete failed. Nothing was changed.');}break;
+    case 'attempt':case 'unattempt':{
+      const p=Object.assign({},probById(V.pid));
+      if(a==='attempt'){p.attempts++;p.lastClimbedAt=now();}else p.attempts=Math.max(0,p.attempts-1);
+      p.updatedAt=now();
+      try{await commitProblem(p);renderInfo();}catch(e){toast('Save failed');}break;}
+    case 'sent':{
+      const p=Object.assign({},probById(V.pid));
+      if(p.sent){p.sent=false;p.firstSentAt=null;}else{p.sent=true;p.firstSentAt=now();p.lastClimbedAt=now();}
+      p.updatedAt=now();
+      try{await commitProblem(p);renderInfo();}catch(e){toast('Save failed');}break;}
+    case 'export':await exportBackup();break;
+    case 'import':$('#fImport').click();break;
+    case 'newwall':if(!confirm('Start a new wall set? Your current boulders are archived (kept, read-only) and the new set starts empty.'))break;wallMode='new';$('#fWall').click();break;
+    case 'openwall':go('list',{wallId:id});break;
+  }
+}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  e.preventDefault();
+  act(el.dataset.act,el).catch(()=>toast('Something went wrong'));
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='q'){F.q=t.value;renderRows();}
+  else if(t.id==='edName')V.draft.name=t.value;
+  else if(t.id==='edNotes')V.draft.notes=t.value;
+  else if(t.id==='ring'){V.ring=+t.value/1000;lsSet('ring',V.ring);}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='sort'){F.sort=t.value;renderRows();}
+  else if(t.id==='fWall'&&t.files[0]){
+    const f=t.files[0];t.value='';
+    if(wallMode==='first'){const nm=(($('#suName')||{}).value||'').trim()||'Home wall';addWall(f,nm,false);}
+    else{const nm=(prompt('Name for the new wall set?','Wall set '+new Date().toISOString().slice(0,7))||'').trim();if(nm)addWall(f,nm,true);}
+  }
+  else if(t.id==='fImport'&&t.files[0]){const f=t.files[0];t.value='';importBackup(f);}
+});
+
+/* ---------- boot ---------- */
+(async()=>{
+  try{db=await openDB();db.onversionchange=()=>db.close();await load();}
+  catch(e){$('#app').innerHTML='<div class="center"><h2>Storage unavailable</h2><p class="mut">This browser cannot save data here (private browsing?). Open the app from the Home Screen icon in a normal Safari or Chrome profile.</p></div>';return;}
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+  render();
+})();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+})();
+</script>
+</body>
+</html>
