@@ -93,10 +93,10 @@ let toastT;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2800);}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:v;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
-const SWATCHES=[['#ff1fd0','Magenta'],['#00e5ff','Cyan'],['#1e5bff','Blue'],['#ffffff','White']];
-let RING_COLOR=lsGet('ringColor','#ff1fd0');
+const SWATCHES=[['#ff1fd0','Magenta'],['#00e5ff','Cyan'],['#1e5bff','Blue'],['#8cff00','Lime'],['#ff2d2d','Red'],['#ffffff','White']];
+let RING_COLOR=lsGet('ringColor','#ff1fd0'); /* last color picked: the default for new holds */
 if(!SWATCHES.some(s=>s[0]===RING_COLOR))RING_COLOR='#ff1fd0';
-const swatchesHTML=()=>`<div class="srow" style="margin:0">${SWATCHES.map(([c,l])=>`<button class="sw ${c===RING_COLOR?'on':''}" style="background:${c}" data-act="rcolor" data-v="${c}" aria-label="${l} rings"></button>`).join('')}</div>`;
+const swatchesHTML=sel=>`<div class="srow" style="margin:0">${SWATCHES.map(([c,l])=>`<button class="sw ${c===sel?'on':''}" style="background:${c}" data-act="rcolor" data-v="${c}" aria-label="${l}"></button>`).join('')}</div>`;
 
 /* ---------- IndexedDB ---------- */
 let db;
@@ -118,7 +118,7 @@ function normWall(w){return{
   photoBuf:w.photoBuf,photoType:w.photoType||'image/jpeg',
   w:+w.w>0?+w.w:1,h:+w.h>0?+w.h:1,
   createdAt:+w.createdAt||now(),archived:!!w.archived,archivedAt:w.archivedAt||null};}
-function normHold(h){return{x:Math.min(1,Math.max(0,+h.x||0)),y:Math.min(1,Math.max(0,+h.y||0)),r:Math.min(0.15,Math.max(0.004,+h.r||0.03)),role:ROLE_SET.has(h.role)?h.role:'hand'};}
+function normHold(h){return{x:Math.min(1,Math.max(0,+h.x||0)),y:Math.min(1,Math.max(0,+h.y||0)),r:Math.min(0.15,Math.max(0.004,+h.r||0.03)),role:ROLE_SET.has(h.role)?h.role:'hand',color:/^#[0-9a-fA-F]{6}$/.test(h.color||'')?String(h.color).toLowerCase():''};}
 function normProb(p){return{
   id:String(p.id||uid()),wallId:String(p.wallId||''),name:String(p.name||'Untitled'),
   difficulty:DL[p.difficulty]?p.difficulty:'medium',
@@ -172,13 +172,13 @@ function processPhoto(file){return new Promise((res,rej)=>{
 /* ---------- photo stage: zoom / pan / tap ---------- */
 let curStage=null;
 function ringSVG(h,W,H){
-  const cx=h.x*W,cy=h.y*H,R=h.r*W,vs='vector-effect="non-scaling-stroke"';
+  const cx=h.x*W,cy=h.y*H,R=h.r*W,vs='vector-effect="non-scaling-stroke"',col=h.color||'#ff1fd0';
   const under=r=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-opacity=".9" stroke-width="9" ${vs}/>`;
-  const top=(r,dash)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${RING_COLOR}" stroke-width="5" ${dash?`stroke-dasharray="${dash}"`:''} ${vs}/>`;
+  const top=(r,dash)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="5" ${dash?`stroke-dasharray="${dash}"`:''} ${vs}/>`;
   switch(h.role){
     case 'start':return under(R)+under(R*.6)+top(R)+top(R*.6);
     case 'foot':return under(R)+top(R,'7 5');
-    case 'finish':return under(R)+top(R)+`<circle cx="${cx}" cy="${cy}" r="${R*.24}" fill="${RING_COLOR}" stroke="#000" stroke-width="2" ${vs}/>`;
+    case 'finish':return under(R)+top(R)+`<circle cx="${cx}" cy="${cy}" r="${R*.24}" fill="${col}" stroke="#000" stroke-width="2" ${vs}/>`;
     default:return under(R)+top(R);
   }
 }
@@ -262,7 +262,7 @@ function go(name,props){V=Object.assign({name},props||{});stage=null;curStage=nu
 const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
 function holdIcon(role){
   const c=(r,d)=>`<circle cx="12" cy="12" r="${r}" fill="none" stroke="currentColor" stroke-width="2" ${d?`stroke-dasharray="${d}"`:''}/>`;
-  const inner=role==='start'?c(9.5)+c(5.5):role==='foot'?c(9,'4 3'):role==='finish'?c(9)+'<circle cx="12" cy="12" r="2.6" fill="currentColor"/>':c(9);
+  const inner=role==='paint'?c(9)+'<path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>':role==='start'?c(9.5)+c(5.5):role==='foot'?c(9,'4 3'):role==='finish'?c(9)+'<circle cx="12" cy="12" r="2.6" fill="currentColor"/>':c(9);
   return `<svg width="26" height="26" viewBox="0 0 24 24">${inner}</svg>`;
 }
 const chipHTML=d=>`<span class="chip c-${d}">${DL[d]}</span>`;
@@ -342,7 +342,7 @@ function viewProblem(){
   const p=probById(V.pid),w=wallById(p.wallId);
   return `<div class="top"><button class="btn" data-act="back">‹ Back</button><div class="ttl">${esc(p.name)}</div>${w.archived?'':'<button class="btn" data-act="edit">Edit</button>'}</div>
   <div id="stage" class="stage"></div>
-  <div class="srow"><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Shadow</button><button class="btn sm" data-act="fit">Fit</button><span id="swWrap" style="margin-left:auto">${swatchesHTML()}</span></div>
+  <div class="srow"><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Shadow</button><button class="btn sm" data-act="fit">Fit</button></div>
   <div id="vInfo"></div>`;
 }
 function renderInfo(){
@@ -372,9 +372,10 @@ function renderEdCtrl(){
   const d=V.draft;
   $('#hcount').textContent=d.holds.length+' hold'+(d.holds.length===1?'':'s');
   $('#edCtrl').innerHTML=`
-  <div class="tools">${ROLES.map(([k,l])=>`<button class="btn ${V.role===k?'on':''}" data-act="role" data-v="${k}">${holdIcon(k)}<span>${l}</span></button>`).join('')}</div>
+  <div class="tools">${ROLES.concat([['paint','Recolor']]).map(([k,l])=>`<button class="btn ${V.role===k?'on':''}" data-act="role" data-v="${k}">${holdIcon(k)}<span>${l}</span></button>`).join('')}</div>
   <label class="lbl">Ring size</label><input id="ring" type="range" min="12" max="70" value="${Math.round(V.ring*1000)}">
-  <label class="lbl">Ring color</label><div id="swEd">${swatchesHTML()}</div>
+  <label class="lbl">Ring color</label><div id="swEd">${swatchesHTML(V.color)}</div>
+  <div class="mut" style="margin-top:6px">New holds use this color. To change a ring you already placed, pick a color, choose Recolor, then tap the ring.</div>
   <label class="lbl">Name</label><input id="edName" value="${esc(d.name)}" placeholder="e.g. Left arête">
   <label class="lbl">Difficulty</label><div class="chips">${DIFFS.map(([k,l])=>`<button class="chip c-${k} ${d.difficulty===k?'':'off'}" data-act="diff" data-v="${k}">${l}</button>`).join('')}</div>
   <label class="lbl">Quality</label><div class="starbar">${[1,2,3,4,5].map(i=>`<button data-act="star" data-v="${i}">${i<=d.stars?'★':'☆'}</button>`).join('')}</div>
@@ -390,9 +391,14 @@ function mountEdit(){
     const d=V.draft,W=w.w,H=w.h;
     let best=-1,bd=1e9;
     d.holds.forEach((h,i)=>{const dd=Math.hypot((x-h.x)*W,(y-h.y)*H);if(dd<bd){bd=dd;best=i;}});
+    const hit=best>=0&&bd<=Math.max(d.holds[best].r*W*1.15,18/k);
+    if(V.role==='paint'){
+      if(hit){pushUndo();d.holds[best].color=V.color;drawEdit();}else toast('Tap a ring to recolor it');
+      return;
+    }
     pushUndo();
-    if(best>=0&&bd<=Math.max(d.holds[best].r*W*1.15,18/k))d.holds.splice(best,1);
-    else d.holds.push({x,y,r:V.ring,role:V.role});
+    if(hit)d.holds.splice(best,1);
+    else d.holds.push({x,y,r:V.ring,role:V.role,color:V.color});
     drawEdit();
   });
   renderEdCtrl();drawEdit();
@@ -503,7 +509,7 @@ async function act(a,el){
   const v=el.dataset.v,id=el.dataset.id;
   switch(a){
     case 'pickwall':wallMode='first';$('#fWall').click();break;
-    case 'new':{const w=activeWall();go('edit',{isNew:true,undo:[],role:V.role||'hand',ring:V.ring||(+lsGet('ring',0.03)),dim:false,
+    case 'new':{const w=activeWall();go('edit',{isNew:true,color:RING_COLOR,undo:[],role:V.role||'hand',ring:V.ring||(+lsGet('ring',0.03)),dim:false,
       draft:{id:uid(),wallId:w.id,name:'',difficulty:'medium',stars:0,feetRule:'marked',holds:[],notes:'',sent:false,firstSentAt:null,attempts:0,lastClimbedAt:null,createdAt:now(),updatedAt:now()}});V.orig=JSON.stringify(V.draft);break;}
     case 'open':go('view',{pid:id,from:V.wallId||null,dim:lsGet('dim','1')==='1'});break;
     case 'back':{const p=probById(V.pid);const w=p&&wallById(p.wallId);go('list',{wallId:w&&w.archived?w.id:null});break;}
@@ -512,12 +518,9 @@ async function act(a,el){
     case 'fdiff':F.diffs.has(v)?F.diffs.delete(v):F.diffs.add(v);el.classList.toggle('off');renderRows();break;
     case 'fsent':F.sent=v;document.querySelectorAll('[data-act=fsent]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));renderRows();break;
     case 'fit':stage&&stage.fit();break;
-    case 'rcolor':RING_COLOR=v;lsSet('ringColor',v);
-      if(V.name==='edit'){renderEdCtrl();drawEdit();}
-      else if(V.name==='view'){$('#swWrap').innerHTML=swatchesHTML();stage.render(probById(V.pid).holds,V.dim);}
-      break;
+    case 'rcolor':V.color=v;RING_COLOR=v;lsSet('ringColor',v);renderEdCtrl();break;
     case 'dim':V.dim=!V.dim;el.classList.toggle('on',V.dim);if(V.name==='view')lsSet('dim',V.dim?'1':'0');if(V.name==='edit')drawEdit();else{const p=probById(V.pid);stage.render(p.holds,V.dim);}break;
-    case 'edit':{const p=probById(V.pid);go('edit',{isNew:false,undo:[],role:'hand',ring:+lsGet('ring',0.03),dim:false,draft:JSON.parse(JSON.stringify(p))});V.orig=JSON.stringify(V.draft);break;}
+    case 'edit':{const p=probById(V.pid);go('edit',{isNew:false,color:RING_COLOR,undo:[],role:'hand',ring:+lsGet('ring',0.03),dim:false,draft:JSON.parse(JSON.stringify(p))});V.orig=JSON.stringify(V.draft);break;}
     case 'role':V.role=v;renderEdCtrl();break;
     case 'diff':V.draft.difficulty=v;renderEdCtrl();break;
     case 'star':V.draft.stars=(V.draft.stars===+v)?0:+v;renderEdCtrl();break;
