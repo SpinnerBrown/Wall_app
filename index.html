@@ -37,6 +37,8 @@ button.chip{padding:8px 13px;font-size:14px;cursor:pointer}
 .seg button{flex:1;background:var(--card);border:0;padding:9px;min-height:40px;cursor:pointer}
 .seg button.on{background:var(--acc);color:#001;font-weight:600}
 .srow{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.sw{width:38px;height:38px;min-height:0;border-radius:50%;border:3px solid var(--line);padding:0;cursor:pointer}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--acc)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;min-height:58px;border-left:6px solid var(--line);cursor:pointer}
 .row.d-warmup{border-left-color:var(--warmup)}.row.d-easy{border-left-color:var(--easy)}.row.d-medium{border-left-color:var(--medium)}.row.d-hard{border-left-color:var(--hard)}.row.d-project{border-left-color:var(--project)}
 .rname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -91,6 +93,10 @@ let toastT;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2800);}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:v;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+const SWATCHES=[['#ff1fd0','Magenta'],['#00e5ff','Cyan'],['#1e5bff','Blue'],['#ffffff','White']];
+let RING_COLOR=lsGet('ringColor','#ff1fd0');
+if(!SWATCHES.some(s=>s[0]===RING_COLOR))RING_COLOR='#ff1fd0';
+const swatchesHTML=()=>`<div class="srow" style="margin:0">${SWATCHES.map(([c,l])=>`<button class="sw ${c===RING_COLOR?'on':''}" style="background:${c}" data-act="rcolor" data-v="${c}" aria-label="${l} rings"></button>`).join('')}</div>`;
 
 /* ---------- IndexedDB ---------- */
 let db;
@@ -167,12 +173,12 @@ function processPhoto(file){return new Promise((res,rej)=>{
 let curStage=null;
 function ringSVG(h,W,H){
   const cx=h.x*W,cy=h.y*H,R=h.r*W,vs='vector-effect="non-scaling-stroke"';
-  const under=r=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-opacity=".85" stroke-width="5.5" ${vs}/>`;
-  const top=(r,dash)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-width="2.5" ${dash?`stroke-dasharray="${dash}"`:''} ${vs}/>`;
+  const under=r=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-opacity=".9" stroke-width="9" ${vs}/>`;
+  const top=(r,dash)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${RING_COLOR}" stroke-width="5" ${dash?`stroke-dasharray="${dash}"`:''} ${vs}/>`;
   switch(h.role){
-    case 'start':return under(R)+top(R)+under(R*.62)+top(R*.62);
-    case 'foot':return under(R)+top(R,'5 4');
-    case 'finish':return under(R)+top(R)+`<circle cx="${cx}" cy="${cy}" r="${R*.2}" fill="#fff" stroke="#000" stroke-width="1.5" ${vs}/>`;
+    case 'start':return under(R)+under(R*.6)+top(R)+top(R*.6);
+    case 'foot':return under(R)+top(R,'7 5');
+    case 'finish':return under(R)+top(R)+`<circle cx="${cx}" cy="${cy}" r="${R*.24}" fill="${RING_COLOR}" stroke="#000" stroke-width="2" ${vs}/>`;
     default:return under(R)+top(R);
   }
 }
@@ -237,7 +243,7 @@ function mountStage(host,wall,onTap){
   function render(holds,dim){
     let mask='';
     if(dim&&holds.length){
-      mask=`<defs><mask id="dm"><rect width="${W}" height="${H}" fill="#fff"/>${holds.map(h=>`<circle cx="${h.x*W}" cy="${h.y*H}" r="${h.r*W*1.9}" fill="#000"/>`).join('')}</mask></defs><rect width="${W}" height="${H}" fill="#000" fill-opacity=".62" mask="url(#dm)"/>`;
+      mask=`<defs><radialGradient id="dg"><stop offset="0" stop-color="#000"/><stop offset=".55" stop-color="#000"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><mask id="dm"><rect width="${W}" height="${H}" fill="#fff"/>${holds.map(h=>`<circle cx="${h.x*W}" cy="${h.y*H}" r="${h.r*W*2.3}" fill="url(#dg)"/>`).join('')}</mask></defs><rect width="${W}" height="${H}" fill="#000" fill-opacity=".6" mask="url(#dm)"/>`;
     }
     svg.innerHTML=mask+holds.map(h=>ringSVG(h,W,H)).join('');
   }
@@ -336,7 +342,7 @@ function viewProblem(){
   const p=probById(V.pid),w=wallById(p.wallId);
   return `<div class="top"><button class="btn" data-act="back">‹ Back</button><div class="ttl">${esc(p.name)}</div>${w.archived?'':'<button class="btn" data-act="edit">Edit</button>'}</div>
   <div id="stage" class="stage"></div>
-  <div class="srow"><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Dim rest</button><button class="btn sm" data-act="fit">Fit</button></div>
+  <div class="srow"><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Shadow</button><button class="btn sm" data-act="fit">Fit</button><span id="swWrap" style="margin-left:auto">${swatchesHTML()}</span></div>
   <div id="vInfo"></div>`;
 }
 function renderInfo(){
@@ -359,7 +365,7 @@ function mountView(){
 function viewEdit(){
   return `<div class="top"><button class="btn" data-act="ecancel">Cancel</button><div class="ttl">${V.isNew?'New boulder':'Edit boulder'}</div><button class="btn pri" data-act="esave">Save</button></div>
   <div id="stage" class="stage"></div>
-  <div class="srow"><button class="btn sm" data-act="undo">↶ Undo</button><button class="btn sm" data-act="fit">Fit</button><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Dim rest</button><span class="mut" id="hcount"></span></div>
+  <div class="srow"><button class="btn sm" data-act="undo">↶ Undo</button><button class="btn sm" data-act="fit">Fit</button><button class="btn sm ${V.dim?'on':''}" data-act="dim" id="dimBtn">Shadow</button><span class="mut" id="hcount"></span></div>
   <div id="edCtrl"></div>`;
 }
 function renderEdCtrl(){
@@ -368,6 +374,7 @@ function renderEdCtrl(){
   $('#edCtrl').innerHTML=`
   <div class="tools">${ROLES.map(([k,l])=>`<button class="btn ${V.role===k?'on':''}" data-act="role" data-v="${k}">${holdIcon(k)}<span>${l}</span></button>`).join('')}</div>
   <label class="lbl">Ring size</label><input id="ring" type="range" min="12" max="70" value="${Math.round(V.ring*1000)}">
+  <label class="lbl">Ring color</label><div id="swEd">${swatchesHTML()}</div>
   <label class="lbl">Name</label><input id="edName" value="${esc(d.name)}" placeholder="e.g. Left arête">
   <label class="lbl">Difficulty</label><div class="chips">${DIFFS.map(([k,l])=>`<button class="chip c-${k} ${d.difficulty===k?'':'off'}" data-act="diff" data-v="${k}">${l}</button>`).join('')}</div>
   <label class="lbl">Quality</label><div class="starbar">${[1,2,3,4,5].map(i=>`<button data-act="star" data-v="${i}">${i<=d.stars?'★':'☆'}</button>`).join('')}</div>
@@ -397,7 +404,7 @@ async function saveDraft(){
   d.name=d.name.trim()||'Untitled';d.updatedAt=now();
   const p=normProb(d);
   try{await commitProblem(p);}catch(e){toast('Save failed. Nothing was changed.');return;}
-  go('view',{pid:p.id,dim:V.dim});
+  go('view',{pid:p.id,dim:lsGet('dim','1')==='1'});
 }
 
 /* ---------- settings ---------- */
@@ -498,14 +505,18 @@ async function act(a,el){
     case 'pickwall':wallMode='first';$('#fWall').click();break;
     case 'new':{const w=activeWall();go('edit',{isNew:true,undo:[],role:V.role||'hand',ring:V.ring||(+lsGet('ring',0.03)),dim:false,
       draft:{id:uid(),wallId:w.id,name:'',difficulty:'medium',stars:0,feetRule:'marked',holds:[],notes:'',sent:false,firstSentAt:null,attempts:0,lastClimbedAt:null,createdAt:now(),updatedAt:now()}});V.orig=JSON.stringify(V.draft);break;}
-    case 'open':go('view',{pid:id,from:V.wallId||null,dim:false});break;
+    case 'open':go('view',{pid:id,from:V.wallId||null,dim:lsGet('dim','1')==='1'});break;
     case 'back':{const p=probById(V.pid);const w=p&&wallById(p.wallId);go('list',{wallId:w&&w.archived?w.id:null});break;}
     case 'home':go('list');break;
     case 'settings':go('settings');break;
     case 'fdiff':F.diffs.has(v)?F.diffs.delete(v):F.diffs.add(v);el.classList.toggle('off');renderRows();break;
     case 'fsent':F.sent=v;document.querySelectorAll('[data-act=fsent]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));renderRows();break;
     case 'fit':stage&&stage.fit();break;
-    case 'dim':V.dim=!V.dim;el.classList.toggle('on',V.dim);if(V.name==='edit')drawEdit();else{const p=probById(V.pid);stage.render(p.holds,V.dim);}break;
+    case 'rcolor':RING_COLOR=v;lsSet('ringColor',v);
+      if(V.name==='edit'){renderEdCtrl();drawEdit();}
+      else if(V.name==='view'){$('#swWrap').innerHTML=swatchesHTML();stage.render(probById(V.pid).holds,V.dim);}
+      break;
+    case 'dim':V.dim=!V.dim;el.classList.toggle('on',V.dim);if(V.name==='view')lsSet('dim',V.dim?'1':'0');if(V.name==='edit')drawEdit();else{const p=probById(V.pid);stage.render(p.holds,V.dim);}break;
     case 'edit':{const p=probById(V.pid);go('edit',{isNew:false,undo:[],role:'hand',ring:+lsGet('ring',0.03),dim:false,draft:JSON.parse(JSON.stringify(p))});V.orig=JSON.stringify(V.draft);break;}
     case 'role':V.role=v;renderEdCtrl();break;
     case 'diff':V.draft.difficulty=v;renderEdCtrl();break;
