@@ -243,7 +243,7 @@ function mountStage(host,wall,onTap){
   function render(holds,dim){
     let mask='';
     if(dim&&holds.length){
-      mask=`<defs><radialGradient id="dg"><stop offset="0" stop-color="#000"/><stop offset=".55" stop-color="#000"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><mask id="dm"><rect width="${W}" height="${H}" fill="#fff"/>${holds.map(h=>`<circle cx="${h.x*W}" cy="${h.y*H}" r="${h.r*W*2.3}" fill="url(#dg)"/>`).join('')}</mask></defs><rect width="${W}" height="${H}" fill="#000" fill-opacity=".6" mask="url(#dm)"/>`;
+      mask=`<defs><mask id="dm"><rect width="${W}" height="${H}" fill="#fff"/>${holds.map(h=>`<circle cx="${h.x*W}" cy="${h.y*H}" r="${h.r*W}" fill="#000"/>`).join('')}</mask></defs><rect width="${W}" height="${H}" fill="#000" fill-opacity=".42" mask="url(#dm)"/>`;
     }
     svg.innerHTML=mask+holds.map(h=>ringSVG(h,W,H)).join('');
   }
